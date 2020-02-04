@@ -69,8 +69,13 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
             do {
                 try vendingMachine.vend(selection: currentSelection, quantity: Int(quantityStepper.value))
                 updateDisplayWith(balance: vendingMachine.amountDeposited, totalPrice: 0.0, itemPrice: 0.0, itemQuantity: 1)
-            } catch {
-                // FIXME: Error handling code
+            } catch VendingMachineError.outOfStock {
+                showAlertWith(title: "Out of Stock", message: "This item is unavailable. Please make another selection.")
+            } catch VendingMachineError.insufficientFunds(let required) {
+                let message = "You need $\(required) to complete the transaction."
+                showAlertWith(title: "Insufficient Funds", message: message)
+            } catch let error {
+                fatalError("\(error)")
             }
             // Reset the cell selection state.
             if let indexPath = collectionView.indexPathsForSelectedItems?.first {
@@ -86,15 +91,12 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
         if let balanceValue = balance {
             balanceLabel.text = "\(balanceValue)"
         }
-        
         if let totalValue = totalPrice {
             totalLabel.text = "\(totalValue)"
         }
-        
         if let priceValue = itemPrice {
             priceLabel.text = "\(priceValue)"
         }
-        
         if let quantityValue = itemQuantity {
             quantityLabel.text = "\(quantityValue)"
         }
@@ -114,6 +116,23 @@ class ViewController: UIViewController, UICollectionViewDataSource, UICollection
             updateTotalPrice(for: item)
         }
     }
+    
+    func showAlertWith(title: String, message: String, style: UIAlertController.Style = .alert) {
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: style)
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: dismissAlert)
+        alertController.addAction(okAction)
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    func dismissAlert(sender: UIAlertAction) {
+        updateDisplayWith(totalPrice: 0, itemPrice: 0, itemQuantity: 1)
+    }
+    
+    @IBAction func depositFunds() {
+        vendingMachine.deposit(5.0)
+        updateDisplayWith(balance: vendingMachine.amountDeposited)
+    }
+    
     
     // MARK: UICollectionViewDataSource
     
